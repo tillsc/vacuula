@@ -7,6 +7,7 @@ name: Docker build & release
 # When using release, making a beta (-b or similar) it will make a prerelease, if no beta marker, it will make a draft release to be published
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
 
@@ -21,15 +22,25 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Parse commit message
         id: parse
         env:
           COMMIT_MSG: ${{ github.event.head_commit.message }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           version=""
           release=false
 
-          if [[ "$COMMIT_MSG" =~ release:([0-9A-Za-z._-]+) ]]; then
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            version="$(sed -nE 's/^version = "(.*)"/\1/p' server/pyproject.toml | head -1)"
+            if [[ -z "$version" ]]; then
+              echo "::error::Cannot read version from server/pyproject.toml."
+              exit 1
+            fi
+          elif [[ "$COMMIT_MSG" =~ release:([0-9A-Za-z._-]+) ]]; then
             version="${BASH_REMATCH[1]}"
             release=true
           elif [[ "$COMMIT_MSG" =~ dbuild:([0-9A-Za-z._-]+) ]]; then
@@ -59,10 +70,6 @@ jobs:
           echo "latest=$latest"         >> "$GITHUB_OUTPUT"
           echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
           echo "Parsed: version=$version release=$release latest=$latest"
-
-      - name: Checkout
-        if: steps.parse.outputs.version != ''
-        uses: actions/checkout@v4
 
       - name: Check pyproject version matches
         if: steps.parse.outputs.version != ''

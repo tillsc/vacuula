@@ -84,6 +84,19 @@ We provide you with a couple of ways to set up the server
 - To update vacuula `docker compose pull`
 - To permanently remove stored data `docker volume rm vacuula-data` <i>Vacuula needs to be stopped first</i>
 
+### Build Docker in your fork
+
+Enable GitHub Actions in your fork, then select **Actions → Docker build & release → Run workflow** and choose `main`.
+The manual build reads the version from `server/pyproject.toml` and publishes images for `linux/amd64` and `linux/arm64` to `ghcr.io/<fork-owner>/<fork-name>:<version>`.
+Beta versions also receive the `beta` tag; stable versions receive `latest`. A manual build does not create a GitHub Release or write to the upstream repository.
+
+For this fork, copy `build/docker/docker-compose.yaml` to `docker-compose.yaml` and change its `image` to `ghcr.io/tillsc/vacuula:1.1.1-b1`.
+Set `TZ=Europe/Berlin` if appropriate, then run `docker compose up -d` on your Linux Docker host.
+The web interface is available at `http://<server-ip>:8050`; ports 335 and 3443 must be reachable from the robots.
+If you want to pull the image without authentication, set the package visibility to public in your fork owner's GitHub Packages settings.
+
+The robot installer is a separate project (`vacuula/installer`); this workflow builds only the server and web interface.
+
 
 ## Configure the robot
 
